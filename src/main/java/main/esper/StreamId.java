@@ -4,16 +4,15 @@ import java.io.Serializable;
 
 public class StreamId implements Serializable
 {
-    //test
     private final String componentId;
     private final String streamId;
 
-    StreamId(String componentId)
+    public StreamId(String componentId)
     {
         this(componentId, "default");
     }
 
-    StreamId(String componentId, String streamId)
+    public StreamId(String componentId, String streamId)
     {
         this.componentId = componentId;
         this.streamId = streamId;
