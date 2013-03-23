@@ -1,4 +1,4 @@
-package org.tomdz.storm.esper.example;
+package main.esper.example;
 
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
@@ -35,7 +35,6 @@ public class TwitterSpout extends BaseRichSpout implements StatusListener
         this.username = username;
         this.pwd = pwd;
     }
-
 
     @Override
     public void ack(Object arg0)

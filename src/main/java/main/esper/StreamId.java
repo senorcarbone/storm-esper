@@ -1,9 +1,10 @@
-package org.tomdz.storm.esper;
+package main.esper;
 
 import java.io.Serializable;
 
 public class StreamId implements Serializable
 {
+    //test
     private final String componentId;
     private final String streamId;
 

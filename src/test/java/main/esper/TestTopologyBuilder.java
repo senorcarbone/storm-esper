@@ -1,14 +1,10 @@
-package org.tomdz.storm.esper;
+package main.esper;
 
 import java.lang.String;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import backtype.storm.spout.ISpout;
-import backtype.storm.task.IBolt;
-import backtype.storm.topology.BoltDeclarer;
 
 import backtype.storm.generated.StormTopology;
 import backtype.storm.topology.IRichBolt;
