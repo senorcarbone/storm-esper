@@ -58,7 +58,7 @@ public class EsperBoltDummy {
     }
 
     public EsperBoltDummy checkEmitSize(int match) {
-        assertEquals(match, emitted);
+        assertEquals(match, emitted.size());
         return this;
     }
 

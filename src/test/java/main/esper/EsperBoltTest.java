@@ -46,6 +46,22 @@ public class EsperBoltTest {
     }
 
     @Test
+    public void views_batch_lengthCheck() {
+        String statement = "select avg(temp) as tempavg from _EVT.win:length_batch(3)";
+        EsperBoltDummy.setup()
+                .statement(statement)
+                .withInFields(ImmutableList.of("temp"))
+                .withOutFields(ImmutableList.of("tempavg"))
+                .init()
+                .tuple().with("temp", 10).push()
+                .tuple().with("temp", 20).push()
+                .checkEmitSize(0)
+                .tuple().with("temp", 30).pushAndWait(200)
+                .checkEmitSize(1)
+                .checkLastMessage(new Object[]{20.0});
+    }
+
+    @Test
     public void pattern_every_followsCheck() {
         String statement = "select 'detected' as res from pattern [ every (_EVT(id='A') -> _EVT(id='B'))]";
         testPatternOrderingBolt(statement, 2);
