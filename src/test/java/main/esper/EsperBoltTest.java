@@ -29,6 +29,23 @@ public class EsperBoltTest {
     }
 
     @Test
+    public void views_ext_timedCheck() {
+        String statement = "select count(*) as cnt from _EVT.win:ext_timed(timestamp, 1 seconds)";
+        EsperBoltDummy.setup()
+                .statement(statement)
+                .usingFieldType(Long.class)
+                .withInFields(ImmutableList.of("timestamp"))
+                .withOutFields(ImmutableList.of("cnt"))
+                .init()
+                .timedTuple().pushAndWait(1000)
+                .timedTuple().push()
+                .timedTuple().pushAndWait(1100)
+                .checkLastMessage(new Object[]{2L})
+                .timedTuple().pushAndWait(1000)
+                .checkLastMessage(new Object[]{1L});
+    }
+
+    @Test
     public void pattern_every_followsCheck() {
         String statement = "select 'detected' as res from pattern [ every (_EVT(id='A') -> _EVT(id='B'))]";
         testPatternOrderingBolt(statement, 2);

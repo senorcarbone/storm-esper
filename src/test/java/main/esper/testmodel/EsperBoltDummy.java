@@ -48,13 +48,17 @@ public class EsperBoltDummy {
         return new SimpleTupleSetup();
     }
 
+    public SimpleTupleSetup timedTuple() {
+        return new SimpleTupleSetup(System.currentTimeMillis());
+    }
+
     public EsperBoltDummy checkHasEmitted() {
         assertThat(emitted, not(empty()));
         return this;
     }
 
     public EsperBoltDummy checkEmitSize(int match) {
-        assertEquals(emitted.size(), match);
+        assertEquals(match, emitted);
         return this;
     }
 
@@ -66,6 +70,15 @@ public class EsperBoltDummy {
     public EsperBoltDummy checkAllMessages(Object[] vals) {
         for (List<Object> emittedTuple : emitted) {
             assertThat(emittedTuple, contains(vals));
+        }
+        return this;
+    }
+
+    public EsperBoltDummy waitFor(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
         return this;
     }
@@ -148,8 +161,7 @@ public class EsperBoltDummy {
                     .statements().add(statement)
                     .build();
             GlobalStreamId glStrId = new GlobalStreamId(TEST_SPOUT, STREAMID);
-            Map<GlobalStreamId, Grouping> retMap = ImmutableMap.of(glStrId, new Grouping());
-            when(topologyContext.getThisSources()).thenReturn(retMap);
+            when(topologyContext.getThisSources()).thenReturn(ImmutableMap.of(glStrId, new Grouping()));
             when(topologyContext.getComponentOutputFields(anyString(), anyString())).thenReturn(new Fields(inputFields));
             testBolt.prepare(Maps.newHashMap(), topologyContext, outputCollector);
         }
@@ -158,6 +170,13 @@ public class EsperBoltDummy {
     public class SimpleTupleSetup {
 
         private Map<String, Object> data = Maps.newHashMap();
+
+        public SimpleTupleSetup() {
+        }
+
+        public SimpleTupleSetup(long timestamp) {
+            with("timestamp", timestamp);
+        }
 
         public SimpleTupleSetup with(String fieldName, Object val) {
             data.put(fieldName, val);
@@ -176,12 +195,14 @@ public class EsperBoltDummy {
 
         public EsperBoltDummy pushAndWait(long millis) {
             push();
-            try {
-                Thread.sleep(millis);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            return waitFor(millis);
+        }
+
+        public EsperBoltDummy waitAndPush(long millis) {
+            waitFor(millis);
+            push();
             return EsperBoltDummy.this;
         }
     }
+
 }
