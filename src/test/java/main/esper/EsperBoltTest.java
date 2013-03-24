@@ -1,7 +1,7 @@
 package main.esper;
 
 import com.google.common.collect.ImmutableList;
-import main.esper.testmodel.EsperTestBolt;
+import main.esper.testmodel.EsperBoltDummy;
 import org.testng.annotations.Test;
 
 /**
@@ -15,7 +15,7 @@ public class EsperBoltTest {
         String statement = "select count(*) as cnt, avg(num) as avgnum, sum(num) as sumnum";
         String num = "num";
 
-        EsperTestBolt.setup()
+        EsperBoltDummy.setup()
                 .statement(statement)
                 .withinBatchWindow(1)
                 .usingFieldType(Integer.class)
@@ -29,23 +29,44 @@ public class EsperBoltTest {
     }
 
     @Test
-    public void pattern_followsCheck()
-    {
-        String statement = "select 'detected' as res from pattern [ every (_EVT(id='A') -> _EVT(id='B')) ]";
+    public void pattern_every_followsCheck() {
+        String statement = "select 'detected' as res from pattern [ every (_EVT(id='A') -> _EVT(id='B'))]";
+        testPatternOrderingBolt(statement, 2);
+    }
 
+    @Test
+    public void pattern_EveryToAny_followsCheck() {
+        String statement = "select 'detected' as res from pattern [ (every _EVT(id='A') -> _EVT(id='B'))]";
+        testPatternOrderingBolt(statement, 3);
+    }
+
+    @Test
+    public void pattern_AnyToEvery_followsCheck() {
+        String statement = "select 'detected' as res from pattern [ ( _EVT(id='A') -> every _EVT(id='B'))]";
+        testPatternOrderingBolt(statement, 3);
+    }
+
+    @Test
+    public void pattern_EveryToEvery_followsCheck() {
+        String statement = "select 'detected' as res from pattern [ (every _EVT(id='A') -> every _EVT(id='B'))]";
+        testPatternOrderingBolt(statement, 7);
+    }
+
+    private EsperBoltDummy testPatternOrderingBolt(String statement, int countMatch) {
         String id = "id";
-        EsperTestBolt.setup()
+        return EsperBoltDummy.setup()
                 .statement(statement)
                 .usingFieldType(String.class)
                 .withInFields(ImmutableList.of(id))
                 .withOutFields(ImmutableList.of("res"))
                 .init()
                 .tuple().with(id, "A").push()
-                .tuple().with(id, "C").push()
-                .tuple().with(id, "D").push()
+                .tuple().with(id, "B").push()
+                .tuple().with(id, "A").push()
+                .tuple().with(id, "A").push()
+                .tuple().with(id, "B").push()
                 .tuple().with(id, "B").pushAndWait(500)
-                .checkHasEmitted()
+                .checkEmitSize(countMatch)
                 .checkLastMessage(new Object[]{"detected"});
     }
-
 }

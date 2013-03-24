@@ -18,13 +18,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import static junit.framework.Assert.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class EsperTestBolt {
+public class EsperBoltDummy {
 
     private static final String TEST_SPOUT = "testspout";
     private static final String TEST_EVENT = "TestEvt";
@@ -32,11 +33,11 @@ public class EsperTestBolt {
     private List<List<Object>> emitted = Lists.newArrayList();
     private EsperBolt testBolt;
 
-    private EsperTestBolt() {
+    private EsperBoltDummy() {
     }
 
     public static SimpleEsperSetup setup() {
-        return new EsperTestBolt().build();
+        return new EsperBoltDummy().build();
     }
 
     private SimpleEsperSetup build() {
@@ -47,13 +48,25 @@ public class EsperTestBolt {
         return new SimpleTupleSetup();
     }
 
-    public EsperTestBolt checkHasEmitted() {
+    public EsperBoltDummy checkHasEmitted() {
         assertThat(emitted, not(empty()));
         return this;
     }
 
-    public EsperTestBolt checkLastMessage(Object[] vals) {
+    public EsperBoltDummy checkEmitSize(int match) {
+        assertEquals(emitted.size(), match);
+        return this;
+    }
+
+    public EsperBoltDummy checkLastMessage(Object[] vals) {
         assertThat(emitted.get(emitted.size() - 1), contains(vals));
+        return this;
+    }
+
+    public EsperBoltDummy checkAllMessages(Object[] vals) {
+        for (List<Object> emittedTuple : emitted) {
+            assertThat(emittedTuple, contains(vals));
+        }
         return this;
     }
 
@@ -119,9 +132,9 @@ public class EsperTestBolt {
             return this;
         }
 
-        public EsperTestBolt init() {
+        public EsperBoltDummy init() {
             build();
-            return EsperTestBolt.this;
+            return EsperBoltDummy.this;
         }
 
         private void build() {
@@ -156,19 +169,19 @@ public class EsperTestBolt {
             return this;
         }
 
-        public EsperTestBolt push() {
-            EsperTestBolt.this.testBolt.execute(new DummyTuple(TEST_SPOUT, STREAMID, data));
-            return EsperTestBolt.this;
+        public EsperBoltDummy push() {
+            EsperBoltDummy.this.testBolt.execute(new DummyTuple(TEST_SPOUT, STREAMID, data));
+            return EsperBoltDummy.this;
         }
 
-        public EsperTestBolt pushAndWait(long millis) {
+        public EsperBoltDummy pushAndWait(long millis) {
             push();
             try {
                 Thread.sleep(millis);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            return EsperTestBolt.this;
+            return EsperBoltDummy.this;
         }
     }
 }
