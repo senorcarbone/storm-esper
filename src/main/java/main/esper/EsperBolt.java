@@ -78,7 +78,6 @@ public class EsperBolt extends BaseRichBolt implements UpdateListener {
 
         for (String stmt : statements) {
             EPStatement statement = admin.createEPL(stmt);
-
             statement.addListener(this);
         }
     }

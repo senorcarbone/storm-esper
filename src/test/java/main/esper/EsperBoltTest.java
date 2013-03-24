@@ -1,13 +1,13 @@
 package main.esper;
 
+import backtype.storm.generated.GlobalStreamId;
+import backtype.storm.generated.Grouping;
 import backtype.storm.task.IOutputCollector;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
-import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
-import backtype.storm.tuple.TupleImpl;
 import com.beust.jcommander.internal.Maps;
-import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableMap;
 import org.testng.annotations.Test;
 
 import java.util.Collection;
@@ -15,24 +15,27 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * General tests around esper and its storm integration
  */
 public class EsperBoltTest {
 
-    public static final String TESTSPOUT = "testspout";
-    public static final String NUMBER = "number";
-    public static final String TEST_EVENT = "TestEvent";
+    public static final String TEST_SPOUT = "testspout";
+    public static final String NUMBER = "num";
+    public static final String TEST_EVENT = "TestEvt";
+    public static final String STREAMID = "AStream";
     private TopologyContext topologyContext = mock(TopologyContext.class);
 
     @Test
     public void PrimitiveTypesCheck() {
-        String statement = "select count(*) as cnt, avg(num) as avgnum, sum(num) as sumnum from TestEvent.win:time_batch(2 sec)";
+        String statement = "select count(*) as cnt, avg(num) as avgnum, sum(num) as sumnum from TestEvt.win:time_batch(2 sec)";
 
         EsperBolt testBolt = new EsperBolt.Builder()
-                .inputs().aliasComponent(TESTSPOUT).withField(NUMBER).ofType(Integer.class).toEventType(TEST_EVENT)
+                .inputs().aliasStream(TEST_SPOUT, STREAMID).withField(NUMBER).ofType(Integer.class).toEventType(TEST_EVENT)
                 .outputs().onDefaultStream().emit("cnt", "avgnum", "sumnum")
                 .statements().add(statement)
                 .build();
@@ -61,48 +64,21 @@ public class EsperBoltTest {
             }
         });
 
-        testBolt.prepare(Maps.newHashMap(), topologyContext, outputCollector);
         Map<String, Object> data = Maps.newHashMap();
         data.put(NUMBER, new Integer(10));
-        testBolt.execute(new TestTuple(TESTSPOUT, TEST_EVENT, data));
-    }
+        DummyTuple tuple = new DummyTuple(TEST_SPOUT, STREAMID, data);
+        GlobalStreamId glStrId = new GlobalStreamId(TEST_SPOUT, STREAMID);
+        Map<GlobalStreamId, Grouping> retMap = ImmutableMap.of(glStrId, new Grouping());
+        when(topologyContext.getThisSources()).thenReturn(retMap);
+        when(topologyContext.getComponentOutputFields(anyString(), anyString())).thenReturn(tuple.getFields());
+        testBolt.prepare(Maps.newHashMap(), topologyContext, outputCollector);
+        testBolt.execute(tuple);
 
-
-    public class TestTuple extends TupleImpl {
-
-        private final String src;
-        private final String streamId;
-        private final List<String> keys = Lists.newArrayList();
-        private final List<Object> values = Lists.newArrayList();
-
-        public TestTuple(String src, String streamId, Map<String, Object> data) {
-            super(null, null, 0, null);
-            this.src = src;
-            this.streamId = streamId;
-            for (Entry<String, Object> entry : data.entrySet()) {
-                keys.add(entry.getKey());
-                values.add(entry.getValue());
-            }
-        }
-
-        @Override
-        public String getSourceComponent() {
-            return src;
-        }
-
-        @Override
-        public String getSourceStreamId() {
-            return streamId;
-        }
-
-        @Override
-        public Fields getFields() {
-            return new Fields(keys);
-        }
-
-        @Override
-        public Object getValue(int index) {
-            return values.get(index);
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
         }
     }
+
 }
