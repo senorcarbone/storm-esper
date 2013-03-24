@@ -24,7 +24,28 @@ public class EsperBoltTest {
                 .init()
                 .tuple().with(num, 10).push()
                 .tuple().with(num, 20).pushAndWait(1200)
+                .checkHasEmitted()
                 .checkLastMessage(new Object[]{2L, 15.0, 30});
+    }
+
+    @Test
+    public void pattern_followsCheck()
+    {
+        String statement = "select 'detected' as res from pattern [ every (_EVT(id='A') -> _EVT(id='B')) ]";
+
+        String id = "id";
+        EsperTestBolt.setup()
+                .statement(statement)
+                .usingFieldType(String.class)
+                .withInFields(ImmutableList.of(id))
+                .withOutFields(ImmutableList.of("res"))
+                .init()
+                .tuple().with(id, "A").push()
+                .tuple().with(id, "C").push()
+                .tuple().with(id, "D").push()
+                .tuple().with(id, "B").pushAndWait(500)
+                .checkHasEmitted()
+                .checkLastMessage(new Object[]{"detected"});
     }
 
 }

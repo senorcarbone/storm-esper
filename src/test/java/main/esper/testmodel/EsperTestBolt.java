@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -47,8 +47,13 @@ public class EsperTestBolt {
         return new SimpleTupleSetup();
     }
 
+    public EsperTestBolt checkHasEmitted() {
+        assertThat(emitted, not(empty()));
+        return this;
+    }
+
     public EsperTestBolt checkLastMessage(Object[] vals) {
-        assertThat(emitted.get(emitted.size()-1), contains(vals));
+        assertThat(emitted.get(emitted.size() - 1), contains(vals));
         return this;
     }
 
@@ -57,8 +62,8 @@ public class EsperTestBolt {
         private List<String> inputFields = Lists.newArrayList();
         private List<String> outputFields = Lists.newArrayList();
         private Class inTypes = Integer.class;
-        private String window;
-        private String statement;
+        private String window = "";
+        private String statement = "";
 
         private OutputCollector outputCollector = new OutputCollector(new IOutputCollector() {
             @Override
@@ -120,10 +125,14 @@ public class EsperTestBolt {
         }
 
         private void build() {
+            statement = statement.replaceAll("_EVT", TEST_EVENT);
+            if (!window.isEmpty()) {
+                statement = statement + " from " + TEST_EVENT + window;
+            }
             testBolt = new EsperBolt.Builder()
                     .inputs().aliasStream(TEST_SPOUT, STREAMID).withFields(inputFields.toArray(new String[inputFields.size()])).ofType(inTypes).toEventType(TEST_EVENT)
                     .outputs().onDefaultStream().emit(outputFields.toArray(new String[outputFields.size()]))
-                    .statements().add(statement + " from " + TEST_EVENT + window)
+                    .statements().add(statement)
                     .build();
             GlobalStreamId glStrId = new GlobalStreamId(TEST_SPOUT, STREAMID);
             Map<GlobalStreamId, Grouping> retMap = ImmutableMap.of(glStrId, new Grouping());
