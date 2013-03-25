@@ -41,12 +41,30 @@ public class EsperBoltTest {
                 .timedTuple().push()
                 .timedTuple().pushAndWait(1100)
                 .checkLastMessage(new Object[]{2L})
-                .timedTuple().pushAndWait(1000)
+                .timedTuple().push()
                 .checkLastMessage(new Object[]{1L});
     }
 
     @Test
-    public void views_batch_lengthCheck() {
+    public void views_ext_timedCheck2() {
+        String statement = "select count(*) as cnt from _EVT.win:ext_timed(timestamp, 30 milliseconds)";
+        EsperBoltDummy.setup()
+                .statement(statement)
+                .usingFieldType(Long.class)
+                .withInFields(ImmutableList.of("timestamp"))
+                .withOutFields(ImmutableList.of("cnt"))
+                .init()
+                .tuple().with("timestamp", 10).push()
+                .tuple().with("timestamp", 20).push()
+                .tuple().with("timestamp", 30).push()
+                .tuple().with("timestamp", 40).push()
+                .tuple().with("timestamp", 45).push()
+                .tuple().with("timestamp", 50).push()
+                .checkLastMessage(new Object[]{4L});
+    }
+
+    @Test
+    public void views_ext_timed_CanBeDeterministic() {
         String statement = "select avg(temp) as tempavg from _EVT.win:length_batch(3)";
         EsperBoltDummy.setup()
                 .statement(statement)
