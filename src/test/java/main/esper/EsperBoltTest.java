@@ -10,6 +10,10 @@ import org.testng.annotations.Test;
 public class EsperBoltTest {
 
 
+    public static final int SMOKE_DETECTOR = 1;
+    public static final int BUILDING_ID = 23222;
+    public static final int TEMP_SENSOR = 2;
+
     @Test
     public void aggregatesCheck() {
         String statement = "select count(*) as cnt, avg(num) as avgnum, sum(num) as sumnum";
@@ -78,6 +82,39 @@ public class EsperBoltTest {
                 .checkEmitSize(1)
                 .checkLastMessage(new Object[]{20.0});
     }
+
+    @Test
+    public void jointstreams_propertyInference() {
+        String statement = "select 'detected' as res from pattern [every (smoke=_EVT(type=1) -> tp=_EVT(type=2, temp > 80))] where smoke.area = tp.area";
+        EsperBoltDummy.setup()
+                .statement(statement)
+                .withInFields(ImmutableList.of("type", "temp", "area"))
+                .withOutFields(ImmutableList.of("res"))
+                .init()
+                .tuple().with("type", SMOKE_DETECTOR).with("area", BUILDING_ID).push()
+                .tuple().with("type", SMOKE_DETECTOR).with("area", 0).push()
+                .tuple().with("type", TEMP_SENSOR).with("temp", 90).with("area", BUILDING_ID).pushAndWait(100)
+                .checkHasEmitted()
+                .checkLastMessage(new Object[]{"detected"});
+    }
+
+    @Test
+    public void jointstreams_propertyInference2() {
+        String patternStatement = "select 'detected' as res from pattern [every (smoke=_EVT(type=1) -> tp=_EVT(type=2, temp > 80))].win:ext_timed(timestamp, 30 milliseconds) where smoke.area = tp.area ";
+        //String patternStatement = "select 'detected' as res from pattern [every (smoke=_EVT(type=1) -> tp=_EVT(type=2, temp > 80))] where smoke.area = tp.area and tp.timestamp < smoke.timestamp + 30";
+        //String patternStatement = "select 'detected' as res from pattern [every _EVT].win:ext_timed(timestamp, 30 milliseconds)";
+
+        EsperBoltDummy.setup()
+                .statement(patternStatement)
+                .withInFields(ImmutableList.of("type", "temp", "area", "timestamp"))
+                .withOutFields(ImmutableList.of("res"))
+                .init()
+                .tuple().with("type", SMOKE_DETECTOR).with("area", BUILDING_ID).with("timestamp",10).push()
+                .tuple().with("type", SMOKE_DETECTOR).with("area", 0).with("timestamp", 30).push()
+                .tuple().with("type", TEMP_SENSOR).with("temp", 90).with("area", BUILDING_ID).with("timestamp", 50).pushAndWait(100)
+                .checkNoEmittions();
+    }
+
 
     @Test
     public void pattern_every_followsCheck() {

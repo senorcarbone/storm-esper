@@ -57,6 +57,11 @@ public class EsperBoltDummy {
         return this;
     }
 
+    public EsperBoltDummy checkNoEmittions() {
+        assertThat(emitted, empty());
+        return this;
+    }
+
     public EsperBoltDummy checkEmitSize(int match) {
         assertEquals(match, emitted.size());
         return this;
@@ -114,6 +119,7 @@ public class EsperBoltDummy {
             public void reportError(Throwable throwable) {
             }
         });
+
 
         public SimpleEsperSetup usingFieldType(Class inFieldClass) {
             this.inTypes = inFieldClass;
