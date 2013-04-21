@@ -10,9 +10,9 @@ import org.testng.annotations.Test;
 public class EsperBoltTest {
 
 
-    public static final int SMOKE_DETECTOR = 1;
+    public static final long SMOKE_DETECTOR = 1;
+    public static final long TEMP_SENSOR = 2;
     public static final int BUILDING_ID = 23222;
-    public static final int TEMP_SENSOR = 2;
 
     @Test
     public void aggregatesCheck() {
@@ -67,6 +67,23 @@ public class EsperBoltTest {
                 .checkLastMessage(new Object[]{4L});
     }
 
+
+    @Test
+    public void views_ext_timed_aggregates() {
+        String statement = "select avg(temp) as tempavg from _EVT.win:ext_timed(ts, 2 seconds)";
+        EsperBoltDummy.setup()
+                .statement(statement)
+                .withInFields(ImmutableList.of("temp", "ts"))
+                .withOutFields(ImmutableList.of("tempavg"))
+                .init()
+                .tuple().with("temp", 10).with("ts", 1000).push()
+                .tuple().with("temp", 20).with("ts", 1200).push()
+                .tuple().with("temp", 30).with("ts", 1500).pushAndWait(200)
+                .checkLastMessage(new Object[]{20.0})
+                .tuple().with("temp", 50).with("ts", 3300).pushAndWait(200)
+                .checkLastMessage(new Object[]{40.0});
+    }
+
     @Test
     public void views_ext_timed_CanBeDeterministic() {
         String statement = "select avg(temp) as tempavg from _EVT.win:length_batch(3)";
@@ -82,6 +99,7 @@ public class EsperBoltTest {
                 .checkEmitSize(1)
                 .checkLastMessage(new Object[]{20.0});
     }
+
 
     @Test
     public void jointstreams_propertyInference() {
@@ -100,19 +118,24 @@ public class EsperBoltTest {
 
     @Test
     public void jointstreams_propertyInference2() {
-        String patternStatement = "select 'detected' as res from pattern [every (smoke=_EVT(type=1) -> tp=_EVT(type=2, temp > 80))].win:ext_timed(timestamp, 30 milliseconds) where smoke.area = tp.area ";
-        //String patternStatement = "select 'detected' as res from pattern [every (smoke=_EVT(type=1) -> tp=_EVT(type=2, temp > 80))] where smoke.area = tp.area and tp.timestamp < smoke.timestamp + 30";
-        //String patternStatement = "select 'detected' as res from pattern [every _EVT].win:ext_timed(timestamp, 30 milliseconds)";
+        //.win:ext_timed(smoke.timestamp, 10 milliseconds)
+        String patternStatement = "select 'detected' as res from pattern [smoke=_EVT(type=1) -> tp=_EVT(type=2, temp > 80)].win:length(1) where smoke.area = tp.area";
 
         EsperBoltDummy.setup()
                 .statement(patternStatement)
+                .usingFieldType(Long.class)
                 .withInFields(ImmutableList.of("type", "temp", "area", "timestamp"))
                 .withOutFields(ImmutableList.of("res"))
                 .init()
-                .tuple().with("type", SMOKE_DETECTOR).with("area", BUILDING_ID).with("timestamp",10).push()
-                .tuple().with("type", SMOKE_DETECTOR).with("area", 0).with("timestamp", 30).push()
-                .tuple().with("type", TEMP_SENSOR).with("temp", 90).with("area", BUILDING_ID).with("timestamp", 50).pushAndWait(100)
-                .checkNoEmittions();
+                .tuple().with("type", SMOKE_DETECTOR).with("area", BUILDING_ID).with("timestamp", 5l).push()
+                .tuple().with("type", SMOKE_DETECTOR).with("area", 0l).with("timestamp", 40l).push()
+                .tuple().with("type", SMOKE_DETECTOR).with("area", 0l).with("timestamp", 45l).push()
+                .tuple().with("type", TEMP_SENSOR).with("temp", 90l).with("area", BUILDING_ID).with("timestamp", 50l).pushAndWait(50)
+                .checkNoEmittions()
+                .tuple().with("type", SMOKE_DETECTOR).with("area", BUILDING_ID).with("timestamp", 80l).push()
+                .tuple().with("type", SMOKE_DETECTOR).with("area", BUILDING_ID).with("timestamp", 140l).push()
+                .tuple().with("type", TEMP_SENSOR).with("temp", 90l).with("area", BUILDING_ID).with("timestamp", 145l).pushAndWait(100)
+                .checkEmitSize(1);
     }
 
 
@@ -155,6 +178,26 @@ public class EsperBoltTest {
                 .tuple().with(id, "B").push()
                 .tuple().with(id, "B").pushAndWait(500)
                 .checkEmitSize(countMatch)
+                .checkLastMessage(new Object[]{"detected"});
+    }
+
+    @Test
+    public void testPatternWithWindow() {
+        String id = "id";
+        String statement = "select 'detected' as res from pattern [ (every _EVT(id='A') ->  _EVT(id='B'))]";
+        EsperBoltDummy.setup()
+                .statement(statement)
+                .usingFieldType(String.class)
+                .withInFields(ImmutableList.of(id))
+                .withOutFields(ImmutableList.of("res"))
+                .init()
+                .tuple().with(id, "A").push()
+                .tuple().with(id, "B").pushAndWait(10)
+                .tuple().with(id, "A").push()
+                .tuple().with(id, "A").push()
+                .tuple().with(id, "B").pushAndWait(10)
+                .tuple().with(id, "B").pushAndWait(10)
+                .checkEmitSize(2)
                 .checkLastMessage(new Object[]{"detected"});
     }
 }
