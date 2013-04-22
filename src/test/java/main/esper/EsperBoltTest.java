@@ -141,10 +141,10 @@ public class EsperBoltTest {
     @Test
     public void match_recognize_check() {
         String statement =
-                "select 'detected' as res from _EVT.win:ext_timed(ts, 1 seconds) \n" +
+                "select 'detected' as res, detectionTime from _EVT.win:ext_timed(ts, 1 seconds) \n" +
                         "  match_recognize ( \n" +
                         "  partition by area \n" +
-                        "  measures A.type as a_type, B.type as b_type, A.ts as a_ts, B.ts as b_ts \n" +
+                        "  measures B.ts as detectionTime \n" +
                         "  pattern (A B) \n" +
                         "  define \n" +
                         "  A as A.type=1, \n" +
@@ -155,7 +155,7 @@ public class EsperBoltTest {
                 .statement(statement)
                 .usingFieldType(Long.class)
                 .withInFields(ImmutableList.of("type", "temp", "area", "ts"))
-                .withOutFields(ImmutableList.of("res"))
+                .withOutFields(ImmutableList.of("res", "detectionTime"))
                 .init()
                 .tuple().with("type", SMOKE_DETECTOR).with("area", BUILDING_ID).with("ts", 1000).push()
                 .tuple().with("type", SMOKE_DETECTOR).with("area", 123).with("ts", 1500).push()
@@ -163,9 +163,9 @@ public class EsperBoltTest {
                 .checkNoEmittions()
                 .tuple().with("type", SMOKE_DETECTOR).with("area", BUILDING_ID).with("ts", 2500).push()
                 .tuple().with("type", TEMP_SENSOR).with("area", BUILDING_ID).with("temp", 150).with("ts", 3000).pushAndWait(200)
-                .tuple().with("type", TEMP_SENSOR).with("area", BUILDING_ID).with("temp", 120).with("ts", 3000).pushAndWait(200)
+                .tuple().with("type", TEMP_SENSOR).with("area", BUILDING_ID).with("temp", 120).with("ts", 3400).pushAndWait(200)
                 .checkEmitSize(1)
-                .checkLastMessage(new Object[]{"detected"});
+                .checkLastMessage(new Object[]{"detected", 3000});
 
     }
 
