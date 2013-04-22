@@ -12,7 +12,8 @@ public class EsperBoltTest {
 
     public static final long SMOKE_DETECTOR = 1;
     public static final long TEMP_SENSOR = 2;
-    public static final int BUILDING_ID = 23222;
+    public static final int BUILDING_1 = 23222;
+    public static final int BUILDING_2 = 123;
 
     @Test
     public void aggregatesCheck() {
@@ -109,9 +110,9 @@ public class EsperBoltTest {
                 .withInFields(ImmutableList.of("type", "temp", "area"))
                 .withOutFields(ImmutableList.of("res"))
                 .init()
-                .tuple().with("type", SMOKE_DETECTOR).with("area", BUILDING_ID).push()
+                .tuple().with("type", SMOKE_DETECTOR).with("area", BUILDING_1).push()
                 .tuple().with("type", SMOKE_DETECTOR).with("area", 0).push()
-                .tuple().with("type", TEMP_SENSOR).with("temp", 90).with("area", BUILDING_ID).pushAndWait(100)
+                .tuple().with("type", TEMP_SENSOR).with("temp", 90).with("area", BUILDING_1).pushAndWait(100)
                 .checkHasEmitted()
                 .checkLastMessage(new Object[]{"detected"});
     }
@@ -127,24 +128,24 @@ public class EsperBoltTest {
                 .withInFields(ImmutableList.of("type", "temp", "area", "timestamp"))
                 .withOutFields(ImmutableList.of("res"))
                 .init()
-                .tuple().with("type", SMOKE_DETECTOR).with("area", BUILDING_ID).with("timestamp", 5l).push()
+                .tuple().with("type", SMOKE_DETECTOR).with("area", BUILDING_1).with("timestamp", 5l).push()
                 .tuple().with("type", SMOKE_DETECTOR).with("area", 0l).with("timestamp", 40l).push()
                 .tuple().with("type", SMOKE_DETECTOR).with("area", 0l).with("timestamp", 45l).push()
-                .tuple().with("type", TEMP_SENSOR).with("temp", 90l).with("area", BUILDING_ID).with("timestamp", 50l).pushAndWait(50)
+                .tuple().with("type", TEMP_SENSOR).with("temp", 90l).with("area", BUILDING_1).with("timestamp", 50l).pushAndWait(50)
                 .checkNoEmittions()
-                .tuple().with("type", SMOKE_DETECTOR).with("area", BUILDING_ID).with("timestamp", 80l).push()
-                .tuple().with("type", SMOKE_DETECTOR).with("area", BUILDING_ID).with("timestamp", 140l).push()
-                .tuple().with("type", TEMP_SENSOR).with("temp", 90l).with("area", BUILDING_ID).with("timestamp", 145l).pushAndWait(100)
+                .tuple().with("type", SMOKE_DETECTOR).with("area", BUILDING_1).with("timestamp", 80l).push()
+                .tuple().with("type", SMOKE_DETECTOR).with("area", BUILDING_1).with("timestamp", 140l).push()
+                .tuple().with("type", TEMP_SENSOR).with("temp", 90l).with("area", BUILDING_1).with("timestamp", 145l).pushAndWait(100)
                 .checkEmitSize(1);
     }
 
     @Test
     public void match_recognize_check() {
         String statement =
-                "select 'detected' as res, detectionTime from _EVT.std:groupwin(area).win:ext_timed(ts, 1 seconds) \n" +
+                "select 'detected' as res, area, detectionTime from _EVT.std:groupwin(area).win:ext_timed(ts, 1 seconds) \n" +
                         "  match_recognize ( \n" +
                         "  partition by area \n" +
-                        "  measures B.ts as detectionTime \n" +
+                        "  measures B.area as area, B.ts as detectionTime \n" +
                         "  pattern (A B) \n" +
                         "  define \n" +
                         "  A as A.type=1, \n" +
@@ -155,20 +156,20 @@ public class EsperBoltTest {
                 .statement(statement)
                 .usingFieldType(Long.class)
                 .withInFields(ImmutableList.of("type", "temp", "area", "ts"))
-                .withOutFields(ImmutableList.of("res", "detectionTime"))
+                .withOutFields(ImmutableList.of("res", "area", "detectionTime"))
                 .init()
-                .tuple().with("type", SMOKE_DETECTOR).with("area", BUILDING_ID).with("ts", 1000).push()
-                .tuple().with("type", SMOKE_DETECTOR).with("area", 123).with("ts", 1500).push()
-                .tuple().with("type", TEMP_SENSOR).with("area", BUILDING_ID).with("temp", 100).with("ts", 2100).push()
+                .tuple().with("type", SMOKE_DETECTOR).with("area", BUILDING_1).with("ts", 1000).push()
+                .tuple().with("type", SMOKE_DETECTOR).with("area", BUILDING_2).with("ts", 1500).push()
+                .tuple().with("type", TEMP_SENSOR).with("area", BUILDING_1).with("temp", 100).with("ts", 2100).push()
                 .checkNoEmittions()
-                .tuple().with("type", SMOKE_DETECTOR).with("area", BUILDING_ID).with("ts", 2500).push()
-                .tuple().with("type", TEMP_SENSOR).with("area", BUILDING_ID).with("temp", 150).with("ts", 3000).pushAndWait(200)
-                .tuple().with("type", TEMP_SENSOR).with("area", BUILDING_ID).with("temp", 120).with("ts", 3400).pushAndWait(200)
+                .tuple().with("type", SMOKE_DETECTOR).with("area", BUILDING_1).with("ts", 2500).push()
+                .tuple().with("type", TEMP_SENSOR).with("area", BUILDING_1).with("temp", 150).with("ts", 3000).pushAndWait(200)
+                .tuple().with("type", TEMP_SENSOR).with("area", BUILDING_1).with("temp", 120).with("ts", 3400).pushAndWait(200)
                 .checkEmitSize(1)
-                .checkLastMessage(new Object[]{"detected", 3000})
-                .tuple().with("type", TEMP_SENSOR).with("area", 123).with("temp", 100).with("ts", 2000).pushAndWait(200)
+                .checkLastMessage(new Object[]{"detected", BUILDING_1, 3000})
+                .tuple().with("type", TEMP_SENSOR).with("area", BUILDING_2).with("temp", 100).with("ts", 2000).pushAndWait(200)
                 .checkEmitSize(2)
-                .checkLastMessage(new Object[]{"detected", 2000})
+                .checkLastMessage(new Object[]{"detected", BUILDING_2, 2000})
         ;
     }
 
