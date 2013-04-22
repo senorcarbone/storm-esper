@@ -141,7 +141,7 @@ public class EsperBoltTest {
     @Test
     public void match_recognize_check() {
         String statement =
-                "select 'detected' as res, detectionTime from _EVT.win:ext_timed(ts, 1 seconds) \n" +
+                "select 'detected' as res, detectionTime from _EVT.std:groupwin(area).win:ext_timed(ts, 1 seconds) \n" +
                         "  match_recognize ( \n" +
                         "  partition by area \n" +
                         "  measures B.ts as detectionTime \n" +
@@ -159,14 +159,17 @@ public class EsperBoltTest {
                 .init()
                 .tuple().with("type", SMOKE_DETECTOR).with("area", BUILDING_ID).with("ts", 1000).push()
                 .tuple().with("type", SMOKE_DETECTOR).with("area", 123).with("ts", 1500).push()
-                .tuple().with("type", TEMP_SENSOR).with("area", BUILDING_ID).with("temp", 100).with("ts", 2000).push()
+                .tuple().with("type", TEMP_SENSOR).with("area", BUILDING_ID).with("temp", 100).with("ts", 2100).push()
                 .checkNoEmittions()
                 .tuple().with("type", SMOKE_DETECTOR).with("area", BUILDING_ID).with("ts", 2500).push()
                 .tuple().with("type", TEMP_SENSOR).with("area", BUILDING_ID).with("temp", 150).with("ts", 3000).pushAndWait(200)
                 .tuple().with("type", TEMP_SENSOR).with("area", BUILDING_ID).with("temp", 120).with("ts", 3400).pushAndWait(200)
                 .checkEmitSize(1)
-                .checkLastMessage(new Object[]{"detected", 3000});
-
+                .checkLastMessage(new Object[]{"detected", 3000})
+                .tuple().with("type", TEMP_SENSOR).with("area", 123).with("temp", 100).with("ts", 2000).pushAndWait(200)
+                .checkEmitSize(2)
+                .checkLastMessage(new Object[]{"detected", 2000})
+        ;
     }
 
     @Test
