@@ -154,7 +154,7 @@ public class EsperBoltTest {
     @Test
     public void testScenarioTelecom() {
         String statement =
-                "select 'SIP_FLOODING_ALERT' as flag, To, Frm, count(*) as alertLevel, Timestamp \n" +
+                "select 'SIP_FLOODING_ALERT' as flag, Frm, To, count(*) as alertLevel, Timestamp \n" +
                         "from _EVT(Request_Line = 1).std:groupwin(Frm,To).win:ext_timed(Timestamp, 10 seconds) \n" +
                         "   match_recognize ( \n" +
                         "   partition by Frm,To \n" +
@@ -168,17 +168,19 @@ public class EsperBoltTest {
                 .statement(statement)
                 .usingFieldType(Long.class)
                 .withInFields(ImmutableList.of("Request_Line", "Frm", "To", "Timestamp"))
-                .withOutFields(ImmutableList.of("flag", "To", "Frm", "alertLevel", "Timestamp"))
+                .withOutFields(ImmutableList.of("flag", "Frm", "To", "alertLevel", "Timestamp"))
                 .init()
-                .tuple().with("Request_Line", 1l).with("Frm", 100).with("To",101).with("Timestamp", 0l).push()
-                .tuple().with("Request_Line", 1l).with("Frm", 200).with("To",101).with("Timestamp", 100l).pushAndWait(200)
+                .tuple().with("Request_Line", 1l).with("Frm", 100).with("To", 101).with("Timestamp", 0l).push()
+                .tuple().with("Request_Line", 1l).with("Frm", 200).with("To", 101).with("Timestamp", 100l).pushAndWait(200)
                 .checkNoEmittions()
-                .tuple().with("Request_Line", 1l).with("Frm", 200).with("To",101).with("Timestamp", 10000l).pushAndWait(200)
+                .tuple().with("Request_Line", 1l).with("Frm", 200).with("To", 101).with("Timestamp", 10000l).pushAndWait(200)
                 .checkNoEmittions()
-                .tuple().with("Request_Line", 1l).with("Frm", 100).with("To",101).with("Timestamp", 1000l).pushAndWait(200)
+                .tuple().with("Request_Line", 1l).with("Frm", 100).with("To", 101).with("Timestamp", 1000l).pushAndWait(200)
                 .checkHasEmitted()
-                .tuple().with("Request_Line", 1l).with("Frm", 100).with("To",101).with("Timestamp", 1500l).pushAndWait(200)
-                .tuple().with("Request_Line", 1l).with("Frm", 100).with("To",101).with("Timestamp", 1500l).pushAndWait(200);
+                .tuple().with("Request_Line", 1l).with("Frm", 100).with("To", 101).with("Timestamp", 1500l).push()
+                .tuple().with("Request_Line", 1l).with("Frm", 100).with("To", 101).with("Timestamp", 2500l).push()
+                .tuple().with("Request_Line", 1l).with("Frm", 100).with("To", 101).with("Timestamp", 4500l).pushAndWait(200)
+                .checkLastMessage(new Object[]{"SIP_FLOODING_ALERT", 100, 101, 2L, 2500L});
 
     }
 
