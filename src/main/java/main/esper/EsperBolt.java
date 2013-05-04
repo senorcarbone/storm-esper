@@ -68,7 +68,6 @@ public class EsperBolt extends BaseRichBolt implements UpdateListener {
         this.collector = collector;
 
         Configuration configuration = new Configuration();
-
         setupEventTypes(context, configuration);
 
         this.esperSink = EPServiceProviderManager.getProvider(this.toString(), configuration);
@@ -92,7 +91,6 @@ public class EsperBolt extends BaseRichBolt implements UpdateListener {
         for (int idx = 0; idx < numFields; idx++) {
             String name = fields.get(idx);
             Object value = tuple.getValue(idx);
-
             data.put(name, value);
         }
 

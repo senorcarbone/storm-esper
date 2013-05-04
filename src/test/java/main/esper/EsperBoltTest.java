@@ -9,11 +9,11 @@ import org.testng.annotations.Test;
  */
 public class EsperBoltTest {
 
-
     public static final long SMOKE_DETECTOR = 1;
     public static final long TEMP_SENSOR = 2;
     public static final int BUILDING_1 = 23222;
     public static final int BUILDING_2 = 123;
+    public static final long SENSOR = 0;
 
     @Test
     public void aggregatesCheck() {
@@ -139,37 +139,84 @@ public class EsperBoltTest {
                 .checkEmitSize(1);
     }
 
+    /*
+                    "select 'SIP_FLOODING_ALERT' as flag, target, intruder, count(*) as alertLevel, Timestamp \n" +
+                        "from _EVT(Request_Line = 'INVITE SIP').std:groupwin(to).win:ext_timed(Timestamp, 10 seconds) \n" +
+                        "   match_recognize ( \n" +
+                        "   partition by To \n" +
+                        "   measures B.To as target, B.Frm as intruder, B.Timestamp as Timestamp \n" +
+                        "   pattern (A B) \n" +
+                        "   define \n" +
+                        "   B as B.To = A.To and B.Timestamp - A.Timestamp < 2000 \n" +
+                        "   ) group by Frm,To";
+     */
+
     @Test
-    public void match_recognize_check() {
+    public void testScenarioTelecom() {
         String statement =
-                "select 'detected' as res, area, detectionTime from _EVT.std:groupwin(area).win:ext_timed(ts, 1 seconds) \n" +
-                        "  match_recognize ( \n" +
-                        "  partition by area \n" +
-                        "  measures B.area as area, B.ts as detectionTime \n" +
-                        "  pattern (A B) \n" +
-                        "  define \n" +
-                        "  A as A.type=1, \n" +
-                        "  B as B.type=2 and  B.temp > 80 \n" +
-                        ")";
+                "select 'SIP_FLOODING_ALERT' as flag, To, Frm, count(*) as alertLevel, Timestamp \n" +
+                        "from _EVT(Request_Line = 1).std:groupwin(Frm,To).win:ext_timed(Timestamp, 10 seconds) \n" +
+                        "   match_recognize ( \n" +
+                        "   partition by Frm,To \n" +
+                        "   measures B.To as To, B.Frm as Frm, B.Timestamp as Timestamp \n" +
+                        "   pattern (A B) \n" +
+                        "   define \n" +
+                        "   B as B.Timestamp - A.Timestamp < 2000 \n" +
+                        "   ) group by Frm,To";
 
         EsperBoltDummy.setup()
                 .statement(statement)
                 .usingFieldType(Long.class)
-                .withInFields(ImmutableList.of("type", "temp", "area", "ts"))
-                .withOutFields(ImmutableList.of("res", "area", "detectionTime"))
+                .withInFields(ImmutableList.of("Request_Line", "Frm", "To", "Timestamp"))
+                .withOutFields(ImmutableList.of("flag", "To", "Frm", "alertLevel", "Timestamp"))
                 .init()
-                .tuple().with("type", SMOKE_DETECTOR).with("area", BUILDING_1).with("ts", 1000).push()
-                .tuple().with("type", SMOKE_DETECTOR).with("area", BUILDING_2).with("ts", 1500).push()
-                .tuple().with("type", TEMP_SENSOR).with("area", BUILDING_1).with("temp", 100).with("ts", 2100).push()
+                .tuple().with("Request_Line", 1l).with("Frm", 100).with("To",101).with("Timestamp", 0l).push()
+                .tuple().with("Request_Line", 1l).with("Frm", 200).with("To",101).with("Timestamp", 100l).pushAndWait(200)
                 .checkNoEmittions()
-                .tuple().with("type", SMOKE_DETECTOR).with("area", BUILDING_1).with("ts", 2500).push()
-                .tuple().with("type", TEMP_SENSOR).with("area", BUILDING_1).with("temp", 150).with("ts", 3000).pushAndWait(200)
-                .tuple().with("type", TEMP_SENSOR).with("area", BUILDING_1).with("temp", 120).with("ts", 3400).pushAndWait(200)
+                .tuple().with("Request_Line", 1l).with("Frm", 200).with("To",101).with("Timestamp", 10000l).pushAndWait(200)
+                .checkNoEmittions()
+                .tuple().with("Request_Line", 1l).with("Frm", 100).with("To",101).with("Timestamp", 1000l).pushAndWait(200)
+                .checkHasEmitted()
+                .tuple().with("Request_Line", 1l).with("Frm", 100).with("To",101).with("Timestamp", 1500l).pushAndWait(200)
+                .tuple().with("Request_Line", 1l).with("Frm", 100).with("To",101).with("Timestamp", 1500l).pushAndWait(200);
+
+    }
+
+    @Test
+    public void match_recognize_check() {
+        String statement =
+                "select 'fire!' as res, area, MAX(temp) as temp, ts from _EVT(id=0).std:groupwin(area).win:ext_timed(ts, 1 seconds) \n" +
+                        "  match_recognize ( \n" +
+                        "  partition by area \n" +
+                        "  measures B.area as area, B.temp as temp, B.ts as ts \n" +
+                        "  pattern (A B) \n" +
+                        "  define \n" +
+                        "  A as A.type=1, \n" +
+                        "  B as B.type=2 and  B.temp > 80 \n" +
+                        ") group by area";
+
+        EsperBoltDummy.setup()
+                .statement(statement)
+                .usingFieldType(Long.class)
+                .withInFields(ImmutableList.of("id", "type", "temp", "area", "ts"))
+                .withOutFields(ImmutableList.of("res", "area", "temp", "ts"))
+                .init()
+                .tuple().with("id", SENSOR).with("type", SMOKE_DETECTOR).with("area", BUILDING_1).with("ts", 1000).push()
+                .tuple().with("id", SENSOR).with("type", SMOKE_DETECTOR).with("area", BUILDING_2).with("ts", 1500).push()
+                .tuple().with("id", SENSOR).with("type", TEMP_SENSOR).with("area", BUILDING_1).with("temp", 100).with("ts", 2100).push()
+                .checkNoEmittions()
+                .tuple().with("id", SENSOR).with("type", SMOKE_DETECTOR).with("area", BUILDING_1).with("ts", 2500).push()
+                .tuple().with("id", SENSOR).with("type", TEMP_SENSOR).with("area", BUILDING_1).with("temp", 150).with("ts", 3000).pushAndWait(200)
+                .tuple().with("id", SENSOR).with("type", TEMP_SENSOR).with("area", BUILDING_1).with("temp", 120).with("ts", 3200).pushAndWait(200)
                 .checkEmitSize(1)
-                .checkLastMessage(new Object[]{"detected", BUILDING_1, 3000})
-                .tuple().with("type", TEMP_SENSOR).with("area", BUILDING_2).with("temp", 100).with("ts", 2000).pushAndWait(200)
+                .checkLastMessage(new Object[]{"fire!", BUILDING_1, 150, 3000})
+                .tuple().with("id", SENSOR).with("type", SMOKE_DETECTOR).with("area", BUILDING_1).with("ts", 3300).push()
+                .tuple().with("id", SENSOR).with("type", TEMP_SENSOR).with("area", BUILDING_1).with("temp", 120).with("ts", 3400).pushAndWait(200)
                 .checkEmitSize(2)
-                .checkLastMessage(new Object[]{"detected", BUILDING_2, 2000})
+                .checkLastMessage(new Object[]{"fire!", BUILDING_1, 150, 3400})
+                .tuple().with("id", SENSOR).with("type", TEMP_SENSOR).with("area", BUILDING_2).with("temp", 100).with("ts", 2000).pushAndWait(200)
+                .checkEmitSize(3)
+                .checkLastMessage(new Object[]{"fire!", BUILDING_2, 100, 2000})
         ;
     }
 
