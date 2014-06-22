@@ -75,14 +75,9 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>storm.starter</groupId>
-            <artifactId>storm-starter</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-        </dependency>
-        <dependency>
             <groupId>com.espertech</groupId>
             <artifactId>esper</artifactId>
-            <version>4.7.0</version>
+            <version>4.11.0</version>
         </dependency>
 
         <dependency>

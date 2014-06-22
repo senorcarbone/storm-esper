@@ -224,6 +224,7 @@ public class RCEsperBolt extends BaseRichBolt implements UpdateListener {
         return null;
     }
 
+
     public static class Builder {
         protected final RCEsperBolt bolt;
 
