@@ -9,11 +9,11 @@ import org.testng.annotations.Test;
  */
 public class RCEsperBoltTest {
 
-    public static final long SMOKE_DETECTOR = 1;
-    public static final long TEMP_SENSOR = 2;
-    public static final int BUILDING_1 = 23222;
-    public static final int BUILDING_2 = 123;
-    public static final long SENSOR = 0;
+    public static final long SMOKE_DETECTOR = 1l;
+    public static final long TEMP_SENSOR = 2l;
+    public static final long BUILDING_1 = 23222l;
+    public static final long BUILDING_2 = 123l;
+    public static final long SENSOR = 0l;
 
     @Test
     public void aggregatesCheck() {
@@ -236,6 +236,37 @@ public class RCEsperBoltTest {
                 .tuple().with("id", SENSOR).with("type", TEMP_SENSOR).with("area", BUILDING_2).with("temp", 100).with("ts", 2000).pushAndWait(200)
                 .checkEmitSize(3)
                 .checkLastMessage(new Object[]{"fire!", BUILDING_2, 100, 2000})
+        ;
+    }
+
+    @Test
+    public void match_recognize_check2() {
+        String statement =
+                "select * from _EVT(area=0, type in [0:2))";
+
+        EsperBoltDummy.setup()
+                .statement(statement)
+                .usingFieldType(Long.class)
+                .withInFields(ImmutableList.of("area", "type", "id", "ts"))
+                .withOutFields(ImmutableList.of("area", "type", "id", "ts"))
+                .init()
+                .tuple().with("area", SENSOR).with("type", SMOKE_DETECTOR).with("id", BUILDING_1).with("ts", 1000l).push()
+                .tuple().with("area", SENSOR).with("type", SMOKE_DETECTOR).with("id", BUILDING_1).with("ts", 2500l).push()
+                .tuple().with("area", SENSOR).with("type", 1).with("id", BUILDING_1).with("ts", 3000l).push()
+                .checkEmitSize(3)
+//                .checkNoEmittions()
+//                .tuple().with("id", SENSOR).with("type", SMOKE_DETECTOR).with("area", BUILDING_1).with("ts", 2500).push()
+//                .tuple().with("id", SENSOR).with("type", TEMP_SENSOR).with("area", BUILDING_1).with("temp", 150).with("ts", 3000).pushAndWait(200)
+//                .tuple().with("id", SENSOR).with("type", TEMP_SENSOR).with("area", BUILDING_1).with("temp", 120).with("ts", 3200).pushAndWait(200)
+//                .checkEmitSize(1)
+//                .checkLastMessage(new Object[]{"fire!", BUILDING_1, 150, 3000})
+//                .tuple().with("id", SENSOR).with("type", SMOKE_DETECTOR).with("area", BUILDING_1).with("ts", 3300).push()
+//                .tuple().with("id", SENSOR).with("type", TEMP_SENSOR).with("area", BUILDING_1).with("temp", 120).with("ts", 3400).pushAndWait(200)
+//                .checkEmitSize(2)
+//                .checkLastMessage(new Object[]{"fire!", BUILDING_1, 150, 3400})
+//                .tuple().with("id", SENSOR).with("type", TEMP_SENSOR).with("area", BUILDING_2).with("temp", 100).with("ts", 2000).pushAndWait(200)
+//                .checkEmitSize(3)
+//                .checkLastMessage(new Object[]{"fire!", BUILDING_2, 100, 2000})
         ;
     }
 

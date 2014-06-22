@@ -72,6 +72,12 @@ public class EsperBoltDummy {
         return this;
     }
 
+    public EsperBoltDummy printEmitted()
+    {
+        System.out.println(emitted);
+        return this;
+    }
+
     public EsperBoltDummy checkAllMessages(Object[] vals) {
         for (List<Object> emittedTuple : emitted) {
             assertThat(emittedTuple, contains(vals));

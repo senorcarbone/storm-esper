@@ -16,8 +16,8 @@ import java.util.*;
 public class RCEsperBolt extends BaseRichBolt implements UpdateListener {
     private static final long serialVersionUID = 1L;
 
-    public static final String ADD_STMT = "addEPL";
-    public static final String REMOVE_STMT = "removeEPL";
+    public static final String EPL_STMT = "statement";
+    public static final String REMOVE_STMT = "removalFlag";
     private String mngmtStreamID = "cepin";
 
     private final Map<StreamId, String> inputAliases = new LinkedHashMap<StreamId, String>();
@@ -83,9 +83,7 @@ public class RCEsperBolt extends BaseRichBolt implements UpdateListener {
     public void execute(Tuple tuple) {
 
         if (mngmtStreamID.equals(tuple.getSourceStreamId())) {
-            List<String> newQueries = (List<String>) tuple.getValueByField(ADD_STMT);
-            List<String> removeQueries = (List<String>) tuple.getValueByField(REMOVE_STMT);
-            reconfigureEngine(newQueries, removeQueries);
+            reconfigureEngine(tuple.getStringByField(EPL_STMT), tuple.getBooleanByField(REMOVE_STMT));
         } else {
             String eventType = getEventTypeName(tuple.getSourceComponent(), tuple.getSourceStreamId());
             Map<String, Object> data = new HashMap<String, Object>();
@@ -106,8 +104,6 @@ public class RCEsperBolt extends BaseRichBolt implements UpdateListener {
                     data.put(name, Timing.timeOfTheDay(ts));
                 }
                 //end small hack
-
-
             }
 
             runtime.sendEvent(data, eventType);
@@ -115,20 +111,14 @@ public class RCEsperBolt extends BaseRichBolt implements UpdateListener {
         }
     }
 
-    private void reconfigureEngine(List<String> newQueries, List<String> removeQueries) {
-        for (String toRemove : removeQueries) {
-            String stmtKey = String.valueOf(toRemove);
-            if (statements.containsKey(stmtKey)) {
-                admin.getStatement(stmtKey).destroy();
-                statements.remove(stmtKey);
-            }
-        }
-        for (String toAdd : newQueries) {
-            String stmtKey = String.valueOf(toAdd);
-            if (!statements.containsKey(stmtKey)) {
-                admin.createEPL(toAdd, stmtKey).addListener(this);
-                statements.put(stmtKey, toAdd);
-            }
+    private void reconfigureEngine(String stmt, boolean removal) {
+        String stmtKey = String.valueOf(stmt.hashCode());
+        if (removal && statements.containsKey(stmtKey)) {
+            admin.getStatement(stmtKey).destroy();
+            statements.remove(stmtKey);
+        } else if (!removal && !statements.containsKey(stmtKey)) {
+            admin.createEPL(stmt, stmtKey);
+            statements.put(stmtKey, stmt);
         }
     }
 
