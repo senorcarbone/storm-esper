@@ -70,7 +70,7 @@ public class StormEsperTest {
         for (Tuple tuple : gatheringBolt.getGatheredData()) {
             String componentId = tuple.getSourceComponent();
             String streamId = tuple.getSourceStreamId();
-            EsperBolt bolt = (EsperBolt) topologyBuilder.getBolt(componentId);
+            RCEsperBolt bolt = (RCEsperBolt) topologyBuilder.getBolt(componentId);
 
             // we'll ignore data from other bolts (such as bolts from previous tests
             // which for some reason are still around)
@@ -91,7 +91,7 @@ public class StormEsperTest {
     @SuppressWarnings("unchecked")
     public void testSimple() throws Exception {
         TestSpout spout = new TestSpout(new Fields("a", "b"), tuple(4, 1), tuple(2, 3), tuple(1, 2), tuple(3, 4));
-        EsperBolt esperBolt = new EsperBolt.Builder()
+        RCEsperBolt esperBolt = new RCEsperBolt.Builder()
                 .inputs().aliasComponent("spout1A").withFields("a", "b").ofType(Integer.class).toEventType("Test1A")
                 .outputs().onDefaultStream().emit("max", "sum")
                 .statements().add("select max(a) as max, sum(b) as sum from Test1A.win:length_batch(4)")
@@ -108,7 +108,7 @@ public class StormEsperTest {
     @SuppressWarnings("unchecked")
     public void testMultipleStatements() throws Exception {
         TestSpout spout = new TestSpout(new Fields("a", "b"), tuple(4, 1), tuple(2, 3), tuple(1, 2), tuple(3, 4));
-        EsperBolt esperBolt = new EsperBolt.Builder()
+        RCEsperBolt esperBolt = new RCEsperBolt.Builder()
                 .inputs().aliasComponent("spout2A").toEventType("Test2A")
                 .outputs().onStream("stream1").fromEventType("MaxValue").emit("max")
                 .onStream("stream2").fromEventType("MinValue").emit("min")
@@ -130,7 +130,7 @@ public class StormEsperTest {
     public void testMultipleSpouts() throws Exception {
         TestSpout spout1 = new TestSpout(new Fields("a"), tuple(4), tuple(2), tuple(1), tuple(3));
         TestSpout spout2 = new TestSpout(new Fields("b"), tuple(1), tuple(3), tuple(2), tuple(4));
-        EsperBolt esperBolt = new EsperBolt.Builder()
+        RCEsperBolt esperBolt = new RCEsperBolt.Builder()
                 .inputs().aliasComponent("spout3A").toEventType("Test3A")
                 .aliasComponent("spout3B").toEventType("Test3B")
                 .outputs().onDefaultStream().emit("min", "max")
@@ -150,7 +150,7 @@ public class StormEsperTest {
     @SuppressWarnings("unchecked")
     public void testNoInputAlias() throws Exception {
         TestSpout spout = new TestSpout(new Fields("a", "b"), tuple(4, 1), tuple(2, 3), tuple(1, 2), tuple(3, 4));
-        EsperBolt esperBolt = new EsperBolt.Builder()
+        RCEsperBolt esperBolt = new RCEsperBolt.Builder()
                 .outputs().onDefaultStream().emit("min", "max")
                 .statements().add("select max(a) as max, min(b) as min from spout4A_default.win:length_batch(4)")
                 .build();
@@ -167,7 +167,7 @@ public class StormEsperTest {
     public void testMultipleSpoutsWithoutInputAlias() throws Exception {
         TestSpout spout1 = new TestSpout(new Fields("a"), tuple(4), tuple(2), tuple(1), tuple(3));
         TestSpout spout2 = new TestSpout(new Fields("b"), tuple(1), tuple(3), tuple(2), tuple(4));
-        EsperBolt esperBolt = new EsperBolt.Builder()
+        RCEsperBolt esperBolt = new RCEsperBolt.Builder()
                 .inputs().aliasStream("spout5A", "default").toEventType("Test5A")
                 .outputs().onDefaultStream().emit("min", "max")
                 .statements().add("select max(a) as max, min(b) as min from Test5A.win:length_batch(4), spout5B_default.win:length_batch(4)")
@@ -187,12 +187,12 @@ public class StormEsperTest {
     public void testMultipleBolts() throws Exception {
         TestSpout spout1 = new TestSpout(new Fields("a"), tuple(4), tuple(2), tuple(1), tuple(3));
         TestSpout spout2 = new TestSpout(new Fields("b"), tuple(1), tuple(3), tuple(2), tuple(4));
-        EsperBolt esperBolt1 = new EsperBolt.Builder()
+        RCEsperBolt esperBolt1 = new RCEsperBolt.Builder()
                 .inputs().aliasComponent("spout6A").toEventType("Test6A")
                 .outputs().onDefaultStream().emit("max")
                 .statements().add("select max(a) as max from Test6A.win:length_batch(4)")
                 .build();
-        EsperBolt esperBolt2 = new EsperBolt.Builder()
+        RCEsperBolt esperBolt2 = new RCEsperBolt.Builder()
                 .inputs().aliasComponent("spout6B").toEventType("Test6B")
                 .outputs().onDefaultStream().emit("min")
                 .statements().add("select min(b) as min from Test6B.win:length_batch(4)")
@@ -214,7 +214,7 @@ public class StormEsperTest {
     // Can't test this yet because we can't catch the error ?
     @Test(enabled = false)
     public void testNoSuchSpout() throws Exception {
-        EsperBolt esperBolt = new EsperBolt.Builder()
+        RCEsperBolt esperBolt = new RCEsperBolt.Builder()
                 .outputs().onDefaultStream().emit("min", "max")
                 .statements().add("select max(a) as max, min(b) as min from spout7A_default.win:length_batch(4)")
                 .build();

@@ -1,6 +1,6 @@
 package main.esper.example;
 
-import main.esper.EsperBolt;
+import main.esper.RCEsperBolt;
 
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
@@ -16,7 +16,7 @@ public class TwitterEsperSample
 
         TopologyBuilder builder = new TopologyBuilder();
         TwitterSpout spout = new TwitterSpout(username, pwd);
-        EsperBolt bolt = new EsperBolt.Builder()
+        RCEsperBolt bolt = new RCEsperBolt.Builder()
                                       .inputs().aliasComponent("spout1").toEventType("Tweets")
                                       .outputs().onDefaultStream().emit("tps", "maxRetweets")
                                       .statements().add("select count(*) as tps, max(retweetCount) as maxRetweets from Tweets.win:time_batch(1 sec)")

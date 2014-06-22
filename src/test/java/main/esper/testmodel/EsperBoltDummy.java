@@ -11,7 +11,7 @@ import com.beust.jcommander.internal.Lists;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import main.esper.DummyTuple;
-import main.esper.EsperBolt;
+import main.esper.RCEsperBolt;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -31,7 +31,7 @@ public class EsperBoltDummy {
     private static final String TEST_EVENT = "TestEvt";
     private static final String STREAMID = "TestStream";
     private List<List<Object>> emitted = Lists.newArrayList();
-    private EsperBolt testBolt;
+    private RCEsperBolt testBolt;
 
     private EsperBoltDummy() {
     }
@@ -161,7 +161,7 @@ public class EsperBoltDummy {
             if (!window.isEmpty()) {
                 statement = statement + " from " + TEST_EVENT + window;
             }
-            testBolt = new EsperBolt.Builder()
+            testBolt = new RCEsperBolt.Builder()
                     .inputs().aliasStream(TEST_SPOUT, STREAMID).withFields(inputFields.toArray(new String[inputFields.size()])).ofType(inTypes).toEventType(TEST_EVENT)
                     .outputs().onDefaultStream().emit(outputFields.toArray(new String[outputFields.size()]))
                     .statements().add(statement)

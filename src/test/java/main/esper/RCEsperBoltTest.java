@@ -7,7 +7,7 @@ import org.testng.annotations.Test;
 /**
  * General tests around esper and its storm integration
  */
-public class EsperBoltTest {
+public class RCEsperBoltTest {
 
     public static final long SMOKE_DETECTOR = 1;
     public static final long TEMP_SENSOR = 2;
