@@ -9,11 +9,15 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import com.espertech.esper.client.*;
 import com.google.common.collect.Maps;
+import main.esper.utils.Timing;
 
 import java.util.*;
 
 public class RCEsperBolt extends BaseRichBolt implements UpdateListener {
     private static final long serialVersionUID = 1L;
+
+    public static final String ADD_STMT = "addEPL";
+    public static final String REMOVE_STMT = "removeEPL";
     private String mngmtStreamID = "cepin";
 
     private final Map<StreamId, String> inputAliases = new LinkedHashMap<StreamId, String>();
@@ -26,9 +30,8 @@ public class RCEsperBolt extends BaseRichBolt implements UpdateListener {
     private transient EPAdministrator admin;
     private transient OutputCollector collector;
 
-    private RCEsperBolt() {
+    public RCEsperBolt() {
     }
-
 
     public void setMngmtStreamID(String mngmtStreamID) {
         this.mngmtStreamID = mngmtStreamID;
@@ -80,8 +83,8 @@ public class RCEsperBolt extends BaseRichBolt implements UpdateListener {
     public void execute(Tuple tuple) {
 
         if (mngmtStreamID.equals(tuple.getSourceStreamId())) {
-            List<String> newQueries = (List<String>) tuple.getValueByField("addEPL");
-            List<String> removeQueries = (List<String>) tuple.getValueByField("removeEPL");
+            List<String> newQueries = (List<String>) tuple.getValueByField(ADD_STMT);
+            List<String> removeQueries = (List<String>) tuple.getValueByField(REMOVE_STMT);
             reconfigureEngine(newQueries, removeQueries);
         } else {
             String eventType = getEventTypeName(tuple.getSourceComponent(), tuple.getSourceStreamId());
@@ -92,7 +95,19 @@ public class RCEsperBolt extends BaseRichBolt implements UpdateListener {
             for (int idx = 0; idx < numFields; idx++) {
                 String name = fields.get(idx);
                 Object value = tuple.getValue(idx);
-                data.put(name, value);
+
+                //small project related hack
+                if (!"timestamp".equals(name)) {
+                    data.put(name, value);
+                } else {
+                    String dateVal = (String) value;
+                    long ts = Timing.toLong((String) value);
+                    data.put("ts", ts);
+                    data.put(name, Timing.timeOfTheDay(ts));
+                }
+                //end small hack
+
+
             }
 
             runtime.sendEvent(data, eventType);
