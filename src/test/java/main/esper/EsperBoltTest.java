@@ -34,8 +34,25 @@ public class EsperBoltTest {
     }
 
     @Test
+    public void testAvg() {
+        String statement = "select count(*) as cnt from _EVT.std:groupwin(part).win:ext_timed(timestamp, 1 seconds)";
+        EsperBoltDummy.setup()
+                .statement(statement)
+                .usingFieldType(Double.class)
+                .withInFields(ImmutableList.of("timestamp"))
+                .withOutFields(ImmutableList.of("cnt"))
+                .init()
+                .timedTuple().pushAndWait(1000)
+                .timedTuple().push()
+                .timedTuple().pushAndWait(1100)
+                .checkLastMessage(new Object[]{2L})
+                .timedTuple().push()
+                .checkLastMessage(new Object[]{1L});
+    }
+
+    @Test
     public void views_ext_timedCheck() {
-        String statement = "select count(*) as cnt from _EVT.win:ext_timed(timestamp, 1 seconds)";
+        String statement = "select part, avg(num) as aver from _EVT.win:ext_timed(Timestamp, 1 seconds)";
         EsperBoltDummy.setup()
                 .statement(statement)
                 .usingFieldType(Long.class)
