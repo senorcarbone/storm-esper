@@ -1,4 +1,4 @@
-package main.esper.utils;
+package org.tomdz.storm.esper.utils;
 
 import java.text.DateFormat;
 import java.text.ParseException;

@@ -1,4 +1,4 @@
-package main.esper.example;
+package org.tomdz.storm.esper.example;
 
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;

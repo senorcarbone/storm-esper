@@ -1,4 +1,4 @@
-package main.esper.testmodel;
+package org.tomdz.storm.esper.testmodel;
 
 import backtype.storm.generated.GlobalStreamId;
 import backtype.storm.generated.Grouping;
@@ -10,8 +10,8 @@ import backtype.storm.tuple.Tuple;
 import com.beust.jcommander.internal.Lists;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import main.esper.DummyTuple;
-import main.esper.RCEsperBolt;
+import org.tomdz.storm.esper.DummyTuple;
+import org.tomdz.storm.esper.RCEsperBolt;
 
 import java.util.Collection;
 import java.util.Collections;

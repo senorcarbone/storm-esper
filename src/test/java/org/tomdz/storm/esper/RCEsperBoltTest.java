@@ -1,7 +1,7 @@
-package main.esper;
+package org.tomdz.storm.esper;
 
 import com.google.common.collect.ImmutableList;
-import main.esper.testmodel.EsperBoltDummy;
+import org.tomdz.storm.esper.testmodel.EsperBoltDummy;
 import org.testng.annotations.Test;
 
 /**

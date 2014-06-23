@@ -1,4 +1,4 @@
-package main.esper;
+package org.tomdz.storm.esper;
 
 import java.io.Serializable;
 

@@ -1,4 +1,4 @@
-package main.esper;
+package org.tomdz.storm.esper;
 
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
@@ -8,6 +8,7 @@ import backtype.storm.tuple.Tuple;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import org.tomdz.storm.esper.EventTypeDescriptor;
 
 import java.io.IOException;
 import java.net.ServerSocket;

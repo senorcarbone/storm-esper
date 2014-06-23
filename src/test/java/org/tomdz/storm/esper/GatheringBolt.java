@@ -1,4 +1,4 @@
-package main.esper;
+package org.tomdz.storm.esper;
 
 import java.util.ArrayList;
 import java.util.List;

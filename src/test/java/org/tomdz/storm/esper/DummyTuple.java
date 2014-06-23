@@ -1,4 +1,4 @@
-package main.esper;
+package org.tomdz.storm.esper;
 
 
 import backtype.storm.generated.GlobalStreamId;

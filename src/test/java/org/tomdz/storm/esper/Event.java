@@ -1,4 +1,4 @@
-package main.esper;
+package org.tomdz.storm.esper;
 
 import java.util.Arrays;
 import java.util.Collections;

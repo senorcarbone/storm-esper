@@ -1,4 +1,4 @@
-package main.esper;
+package org.tomdz.storm.esper;
 
 import java.util.List;
 import java.util.Map;

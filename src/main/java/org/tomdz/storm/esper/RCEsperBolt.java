@@ -1,4 +1,4 @@
-package main.esper;
+package org.tomdz.storm.esper;
 
 import backtype.storm.generated.GlobalStreamId;
 import backtype.storm.task.OutputCollector;
@@ -9,7 +9,7 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import com.espertech.esper.client.*;
 import com.google.common.collect.Maps;
-import main.esper.utils.Timing;
+import org.tomdz.storm.esper.utils.Timing;
 
 import java.util.*;
 
