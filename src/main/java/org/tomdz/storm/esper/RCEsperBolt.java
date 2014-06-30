@@ -98,7 +98,6 @@ public class RCEsperBolt extends BaseRichBolt implements UpdateListener {
                 if (!"timestamp".equals(name)) {
                     data.put(name, value);
                 } else {
-                    String dateVal = (String) value;
                     long ts = Timing.toLong((String) value);
                     data.put("ts", ts);
                     data.put(name, Timing.timeOfTheDay(ts));
