@@ -71,6 +71,11 @@ public class RCEsperBolt extends BaseRichBolt implements UpdateListener {
         this.esperSink.initialize();
         this.runtime = esperSink.getEPRuntime();
         this.admin = esperSink.getEPAdministrator();
+
+        for (Map.Entry<String, String> stmtEntry : statements.entrySet()) {
+            EPStatement statement = admin.createEPL(stmtEntry.getValue(), stmtEntry.getKey());
+            statement.addListener(this);
+        }
     }
 
     @Override
@@ -78,10 +83,6 @@ public class RCEsperBolt extends BaseRichBolt implements UpdateListener {
 
         if (mngmtStreamID.equals(tuple.getSourceStreamId())) {
             reconfigureEngine(tuple.getStringByField(EPL_STMT), tuple.getBooleanByField(REMOVE_STMT));
-            for (Map.Entry<String, String> stmtEntry : statements.entrySet()) {
-                EPStatement statement = admin.createEPL(stmtEntry.getValue(), stmtEntry.getKey());
-                statement.addListener(this);
-            }
         } else {
             String eventType = getEventTypeName(tuple.getSourceComponent(), tuple.getSourceStreamId());
             Map<String, Object> data = new HashMap<String, Object>();
@@ -113,7 +114,8 @@ public class RCEsperBolt extends BaseRichBolt implements UpdateListener {
             admin.getStatement(stmtKey).destroy();
             statements.remove(stmtKey);
         } else if (!removal && !statements.containsKey(stmtKey)) {
-            admin.createEPL(stmt, stmtKey);
+            EPStatement statement = admin.createEPL(stmt, stmtKey);
+            statement.addListener(this);
             statements.put(stmtKey, stmt);
         }
     }
