@@ -64,7 +64,6 @@ public class RCEsperBolt extends BaseRichBolt implements UpdateListener {
     @Override
     public void prepare(@SuppressWarnings("rawtypes") Map conf, TopologyContext context, OutputCollector collector) {
         this.collector = collector;
-
         Configuration configuration = new Configuration();
         setupEventTypes(context, configuration);
 
@@ -72,11 +71,6 @@ public class RCEsperBolt extends BaseRichBolt implements UpdateListener {
         this.esperSink.initialize();
         this.runtime = esperSink.getEPRuntime();
         this.admin = esperSink.getEPAdministrator();
-
-        for (Map.Entry<String, String> stmtEntry : statements.entrySet()) {
-            EPStatement statement = admin.createEPL(stmtEntry.getValue(), stmtEntry.getKey());
-            statement.addListener(this);
-        }
     }
 
     @Override
@@ -84,6 +78,10 @@ public class RCEsperBolt extends BaseRichBolt implements UpdateListener {
 
         if (mngmtStreamID.equals(tuple.getSourceStreamId())) {
             reconfigureEngine(tuple.getStringByField(EPL_STMT), tuple.getBooleanByField(REMOVE_STMT));
+            for (Map.Entry<String, String> stmtEntry : statements.entrySet()) {
+                EPStatement statement = admin.createEPL(stmtEntry.getValue(), stmtEntry.getKey());
+                statement.addListener(this);
+            }
         } else {
             String eventType = getEventTypeName(tuple.getSourceComponent(), tuple.getSourceStreamId());
             Map<String, Object> data = new HashMap<String, Object>();
@@ -104,7 +102,6 @@ public class RCEsperBolt extends BaseRichBolt implements UpdateListener {
                 }
                 //end small hack
             }
-
             runtime.sendEvent(data, eventType);
             collector.ack(tuple);
         }
